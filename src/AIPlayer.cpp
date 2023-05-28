@@ -397,7 +397,7 @@ double AIPlayer::MiValoracion(const Parchis &estado, int jugador)
     int oponente = (jugador+1) % 2;
 
     // Si hay un ganador, devuelvo más/menos infinito, según si he ganado yo o el oponente.
-    if (ganador == jugador)
+    /*if (ganador == jugador)
     {
         return gana;
     }
@@ -406,7 +406,7 @@ double AIPlayer::MiValoracion(const Parchis &estado, int jugador)
         return pierde;
     }
     else
-    {
+    {*/
         // Colores que juega mi jugador y colores del oponente
         vector<color> my_colors = estado.getPlayerColors(jugador);
         vector<color> op_colors = estado.getPlayerColors(oponente);
@@ -440,26 +440,28 @@ double AIPlayer::MiValoracion(const Parchis &estado, int jugador)
                 }
                 if (estado.getBoard().getPiece(c, j).get_box().type == goal)
                 {
-                    puntuacion_jugador += 100;
+                    puntuacion_jugador += 1000;
                 }
                 if (estado.isEatingMove() and (estado.eatenPiece().first!=my_colors[(i+1)%2])){  //si el q me como no es mi otro color
-                    puntuacion_jugador += 25;
+                    puntuacion_jugador += 35;
                 }
 
                 if (estado.piecesAtGoal(c)==1){
                     puntuacion_jugador += 30;
                 }else if (estado.piecesAtGoal(c)==2){
                     puntuacion_jugador += 70;
+                }else if (estado.piecesAtGoal(c)==3){//ESTO LO HE AÑADIDO NUUUEVOO PARA QUE QUIERA METER EN CASA
+                    puntuacion_jugador += 4000;
                 }
                 if (estado.piecesAtHome(c)==1){
-                    puntuacion_jugador -= 5;
+                    puntuacion_jugador -= 10;
                 }else if (estado.piecesAtHome(c)==2){
-                    puntuacion_jugador -= 20;
+                    puntuacion_jugador -= 30;
                 }else if (estado.piecesAtHome(c)==3){
-                    puntuacion_jugador -= 25;
+                    puntuacion_jugador -= 35;
                 }
                 //le restamos la distancia pq quiero q se le de preferencia al que este mas cerca de la meta
-                puntuacion_jugador -=(estado.distanceToGoal(c,estado.getBoard().getPiece(c, j).get_box()))/2;
+                puntuacion_jugador -=estado.distanceToGoal(c,estado.getBoard().getPiece(c, j).get_box());
             }
         }
 
@@ -470,23 +472,23 @@ double AIPlayer::MiValoracion(const Parchis &estado, int jugador)
             if (current_dices_especiales[i]==banana){  //platano
                 puntuacion_jugador += 2;
             }if (current_dices_especiales[i]==mushroom){  //champiñon
-                puntuacion_jugador += 2;
+                puntuacion_jugador += 8;
             }if (current_dices_especiales[i]==red_shell){  //Caparazón rojo
-                puntuacion_jugador += 5;
-            }if (current_dices_especiales[i]==blue_shell){  //Caparazón azul
                 puntuacion_jugador += 10;
+            }if (current_dices_especiales[i]==blue_shell){  //Caparazón azul
+                puntuacion_jugador += 50;
             }if (current_dices_especiales[i]==horn){  //Bocina
                 puntuacion_jugador += 10;
             }if (current_dices_especiales[i]==bullet){  //Bala
                 puntuacion_jugador += 10;
             }if (current_dices_especiales[i]==shock){  //Rayo
-                puntuacion_jugador += 10;
+                puntuacion_jugador += 50;
             }if (current_dices_especiales[i]==boo){  //Boo
-                puntuacion_jugador += 15;
+                puntuacion_jugador += 20;
             }if (current_dices_especiales[i]==star){  //Estrella
-                puntuacion_jugador += 15;
+                puntuacion_jugador += 20;
             }if (current_dices_especiales[i]==mega_mushroom){  //Megachampiñón
-                puntuacion_jugador += 15;
+                puntuacion_jugador += 20;
             }
         }
 
@@ -507,14 +509,14 @@ double AIPlayer::MiValoracion(const Parchis &estado, int jugador)
                 }
                 if (estado.getBoard().getPiece(c, j).get_box().type == goal)
                 {
-                    puntuacion_oponente += 30;
+                    puntuacion_oponente += 35;
                 }
                 if (estado.isEatingMove()){
-                    puntuacion_oponente += 15;
+                    puntuacion_oponente += 35;
                 }
 
                 //le restamos la distancia pq quiero q se le de preferencia al que este mas cerca de la meta
-                puntuacion_oponente -=(estado.distanceToGoal(c,estado.getBoard().getPiece(c, j).get_box()))/2;
+                puntuacion_oponente -=estado.distanceToGoal(c,estado.getBoard().getPiece(c, j).get_box());
             }
         }
 
@@ -546,6 +548,6 @@ double AIPlayer::MiValoracion(const Parchis &estado, int jugador)
 
         // Devuelvo la puntuación de mi jugador menos la puntuación del oponente.
         return puntuacion_jugador - puntuacion_oponente;
-    }
+    //}
 }
 
