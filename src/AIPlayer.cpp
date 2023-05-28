@@ -465,7 +465,7 @@ double AIPlayer::MiValoracion(const Parchis &estado, int jugador)
             }
         }
 
-        
+        //
         //Añado objetos especiales con puntuacion
         for (int i = 0; i < current_dices_especiales.size(); i++)
         {
