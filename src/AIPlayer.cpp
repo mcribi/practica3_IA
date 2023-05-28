@@ -438,16 +438,28 @@ double AIPlayer::MiValoracion(const Parchis &estado, int jugador)
                 {
                     puntuacion_jugador++;
                 }
-                else if (estado.getBoard().getPiece(c, j).get_box().type == goal)
+                if (estado.getBoard().getPiece(c, j).get_box().type == goal)
                 {
-                    puntuacion_jugador += 10;
+                    puntuacion_jugador += 100;
                 }
-                if (estado.isEatingMove()){
-                    puntuacion_jugador += 20;
+                if (estado.isEatingMove() and (estado.eatenPiece().first!=my_colors[(i+1)%2])){  //si el q me como no es mi otro color
+                    puntuacion_jugador += 25;
                 }
 
+                if (estado.piecesAtGoal(c)==1){
+                    puntuacion_jugador += 30;
+                }else if (estado.piecesAtGoal(c)==2){
+                    puntuacion_jugador += 70;
+                }
+                if (estado.piecesAtHome(c)==1){
+                    puntuacion_jugador -= 5;
+                }else if (estado.piecesAtHome(c)==2){
+                    puntuacion_jugador -= 20;
+                }else if (estado.piecesAtHome(c)==3){
+                    puntuacion_jugador -= 25;
+                }
                 //le restamos la distancia pq quiero q se le de preferencia al que este mas cerca de la meta
-                puntuacion_jugador -=(estado.distanceToGoal(c,estado.getBoard().getPiece(c, j).get_box()))/4;
+                puntuacion_jugador -=(estado.distanceToGoal(c,estado.getBoard().getPiece(c, j).get_box()))/2;
             }
         }
 
@@ -493,16 +505,16 @@ double AIPlayer::MiValoracion(const Parchis &estado, int jugador)
                     // Valoro negativamente que la ficha esté en casilla segura o meta.
                     puntuacion_oponente++;
                 }
-                //else if (estado.getBoard().getSpecialItems() getPiece(c, j).get_box().type get_type() get_box().type == banana)
-                //{
-                //    puntuacion_oponente += 10;
-                //}
+                if (estado.getBoard().getPiece(c, j).get_box().type == goal)
+                {
+                    puntuacion_oponente += 30;
+                }
                 if (estado.isEatingMove()){
                     puntuacion_oponente += 15;
                 }
 
                 //le restamos la distancia pq quiero q se le de preferencia al que este mas cerca de la meta
-                puntuacion_oponente -=(estado.distanceToGoal(c,estado.getBoard().getPiece(c, j).get_box()))/4;
+                puntuacion_oponente -=(estado.distanceToGoal(c,estado.getBoard().getPiece(c, j).get_box()))/2;
             }
         }
 
