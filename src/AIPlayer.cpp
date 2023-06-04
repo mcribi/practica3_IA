@@ -45,6 +45,7 @@ void AIPlayer::think(color & c_piece, int & id_piece, int & dice) const{
             cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
         break;
         case 5:
+            cout<<"pienso, luego existo"<<endl;
             valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion);
             cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;        
         break;
@@ -260,13 +261,12 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &actual, int jugador, int profundid
     if (profundidad==PROFUNDIDAD_ALFABETA or actual.gameOver()){ 
         valor=heuristic(actual, jugador);
         return valor;
-        //return heuristic(actual, jugador);
     }
     
     //max: llama al alg de busqueda, si saca un 6, come ficha o introduce en meta
     if(actual.getCurrentPlayerId()==jugador) {    
         //cout<<"MAX"<<endl;
-        int alpha_anterior;
+        double alpha_anterior;
         
         for(ParchisBros::Iterator it = hijos.begin(); it != hijos.end(); ++it){ //para cada hijo
             Parchis siguiente_hijo = *it; // Accedemos al tablero hijo con el operador de indirección
@@ -276,18 +276,12 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &actual, int jugador, int profundid
             alpha=max(alpha, Poda_AlfaBeta(siguiente_hijo, jugador, profundidad+1, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, heuristic));
             //cout<<alpha<<endl;
             valor=alpha;
-            /*if (alpha!=menosinf){
-                valor=alpha;
-            }else if (beta!=masinf)
-                valor=beta;
-            */
 
             if (beta<=alpha){   //se han intercambiado y podemos podar (SALE)
                 //valor=beta;
                 break;
             }
             if (profundidad==0 and alpha!=alpha_anterior and valor!=menosinf){ //solo consideramos el mov cuando alfa se ha actualizado
-                //valor=heuristic(siguiente_hijo, jugador);
                 //cout<<"profundidad 0"<<endl;
                 c_piece = it.getMovedColor(); // Guardo color de la ficha movida.
                 id_piece = it.getMovedPieceId(); // Guardo id de la ficha movida.
@@ -302,11 +296,6 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &actual, int jugador, int profundid
             Parchis siguiente_hijo = *it; // Accedemos al tablero hijo con el operador de indirección
             beta=min(beta, Poda_AlfaBeta(siguiente_hijo, jugador, profundidad+1, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, heuristic));
             valor=beta;
-            /*if (beta!=masinf){
-                valor=beta;
-            }else if(alpha!=menosinf)
-                valor=alpha;
-            */
 
             if (beta<=alpha){   //se han intercambiado y podemos podar
                 //valor=alpha;
@@ -396,158 +385,288 @@ double AIPlayer::MiValoracion(const Parchis &estado, int jugador)
     int ganador = estado.getWinner();
     int oponente = (jugador+1) % 2;
 
-    // Si hay un ganador, devuelvo más/menos infinito, según si he ganado yo o el oponente.
-    /*if (ganador == jugador)
+
+    // Colores que juega mi jugador y colores del oponente
+    vector<color> my_colors = estado.getPlayerColors(jugador);
+    vector<color> op_colors = estado.getPlayerColors(oponente);
+
+    //todos los dados
+    vector<int> current_dices_con_especiales;   
+    current_dices_con_especiales = estado.getAllAvailableDices(jugador);    
+
+    //solo dados especiales
+    vector<int> current_dices_especiales;   
+    current_dices_especiales = estado.getAvailableSpecialDices(jugador);
+
+    //solo dados especiales
+    vector<int> current_dices_especiales_oponente;   
+    current_dices_especiales_oponente = estado.getAvailableSpecialDices(oponente);
+    
+    // Recorro todas las fichas de mi jugador
+    int puntuacion_jugador = 0;
+    int puntuacion_un_color=0;
+    int puntuacion_otro_color=0;
+    int distancia_un_color=0;
+    int distancia_otro_color=0;
+    bool casi_gano=false;
+
+    // Recorro colores de mi jugador.
+    for (int i = 0; i < my_colors.size(); i++)
     {
-        return gana;
-    }
-    else if (ganador == oponente)
-    {
-        return pierde;
-    }
-    else
-    {*/
-        // Colores que juega mi jugador y colores del oponente
-        vector<color> my_colors = estado.getPlayerColors(jugador);
-        vector<color> op_colors = estado.getPlayerColors(oponente);
+        color c = my_colors[i];
 
-        //todos los dados
-        vector<int> current_dices_con_especiales;   
-        current_dices_con_especiales = estado.getAllAvailableDices(jugador);    
-
-        //solo dados especiales
-        vector<int> current_dices_especiales;   
-        current_dices_especiales = estado.getAvailableSpecialDices(jugador);
-
-        //solo dados especiales
-        vector<int> current_dices_especiales_oponente;   
-        current_dices_especiales_oponente = estado.getAvailableSpecialDices(oponente);
-        
-
-        // Recorro todas las fichas de mi jugador
-        int puntuacion_jugador = 0;
-        // Recorro colores de mi jugador.
-        for (int i = 0; i < my_colors.size(); i++)
-        {
-            color c = my_colors[i];
-            // Recorro las fichas de ese color.
-            for (int j = 0; j < num_pieces; j++)
-            {
-                // Valoro positivamente que la ficha esté en casilla segura o meta.
-                if (estado.isSafePiece(c, j))
-                {
-                    puntuacion_jugador++;
-                }
-                if (estado.getBoard().getPiece(c, j).get_box().type == goal)
-                {
-                    puntuacion_jugador += 1000;
-                }
-                if (estado.isEatingMove() and (estado.eatenPiece().first!=my_colors[(i+1)%2])){  //si el q me como no es mi otro color
-                    puntuacion_jugador += 35;
-                }
-
-                if (estado.piecesAtGoal(c)==1){
-                    puntuacion_jugador += 30;
-                }else if (estado.piecesAtGoal(c)==2){
-                    puntuacion_jugador += 70;
-                }else if (estado.piecesAtGoal(c)==3){//ESTO LO HE AÑADIDO NUUUEVOO PARA QUE QUIERA METER EN CASA
-                    puntuacion_jugador += 4000;
-                }
-                if (estado.piecesAtHome(c)==1){
-                    puntuacion_jugador -= 10;
-                }else if (estado.piecesAtHome(c)==2){
-                    puntuacion_jugador -= 30;
-                }else if (estado.piecesAtHome(c)==3){
-                    puntuacion_jugador -= 35;
-                }
-                //le restamos la distancia pq quiero q se le de preferencia al que este mas cerca de la meta
-                puntuacion_jugador -=estado.distanceToGoal(c,estado.getBoard().getPiece(c, j).get_box());
-            }
+        //potencio un color 
+        /*if (estado.piecesAtGoal(my_colors[0])==1){
+            puntuacion_un_color+=50;
+        }else if (estado.piecesAtGoal(my_colors[0])==2){
+            puntuacion_un_color+=100;
         }
 
-        //
-        //Añado objetos especiales con puntuacion
-        for (int i = 0; i < current_dices_especiales.size(); i++)
-        {
-            if (current_dices_especiales[i]==banana){  //platano
-                puntuacion_jugador += 2;
-            }if (current_dices_especiales[i]==mushroom){  //champiñon
-                puntuacion_jugador += 8;
-            }if (current_dices_especiales[i]==red_shell){  //Caparazón rojo
-                puntuacion_jugador += 10;
-            }if (current_dices_especiales[i]==blue_shell){  //Caparazón azul
-                puntuacion_jugador += 50;
-            }if (current_dices_especiales[i]==horn){  //Bocina
-                puntuacion_jugador += 10;
-            }if (current_dices_especiales[i]==bullet){  //Bala
-                puntuacion_jugador += 10;
-            }if (current_dices_especiales[i]==shock){  //Rayo
-                puntuacion_jugador += 50;
-            }if (current_dices_especiales[i]==boo){  //Boo
-                puntuacion_jugador += 20;
-            }if (current_dices_especiales[i]==star){  //Estrella
-                puntuacion_jugador += 20;
-            }if (current_dices_especiales[i]==mega_mushroom){  //Megachampiñón
-                puntuacion_jugador += 20;
-            }
+        if (estado.piecesAtGoal(my_colors[1])==1){
+            puntuacion_otro_color+=50;
+        }else if (estado.piecesAtGoal(my_colors[1])==2){
+            puntuacion_otro_color+=75;
         }
 
-
-        // Recorro todas las fichas del oponente
-        int puntuacion_oponente = 0;
-        // Recorro colores del oponente.
-        for (int i = 0; i < op_colors.size(); i++)
-        {
-            color c = op_colors[i];
-            // Recorro las fichas de ese color.
-            for (int j = 0; j < num_pieces; j++)
-            {
-                if (estado.isSafePiece(c, j))
-                {
-                    // Valoro negativamente que la ficha esté en casilla segura o meta.
-                    puntuacion_oponente++;
-                }
-                if (estado.getBoard().getPiece(c, j).get_box().type == goal)
-                {
-                    puntuacion_oponente += 35;
-                }
-                if (estado.isEatingMove()){
-                    puntuacion_oponente += 35;
-                }
-
-                //le restamos la distancia pq quiero q se le de preferencia al que este mas cerca de la meta
-                puntuacion_oponente -=estado.distanceToGoal(c,estado.getBoard().getPiece(c, j).get_box());
-            }
-        }
-
-        
-        /*for (int i = 0; i < current_dices_especiales_oponente.size(); i++)
-        {
-            if (current_dices_especiales_oponente[i]==banana){  //platano
-                puntuacion_oponente += 2;
-            }if (current_dices_especiales_oponente[i]==mushroom){  //champiñon
-                puntuacion_oponente += 2;
-            }if (current_dices_especiales_oponente[i]==red_shell){  //Caparazón rojo
-                puntuacion_oponente += 5;
-            }if (current_dices_especiales_oponente[i]==blue_shell){  //Caparazón azul
-                puntuacion_oponente += 6;
-            }if (current_dices_especiales_oponente[i]==horn){  //Bocina
-                puntuacion_oponente += 10;
-            }if (current_dices_especiales_oponente[i]==bullet){  //Bala
-                puntuacion_oponente += 10;
-            }if (current_dices_especiales_oponente[i]==shock){  //Rayo
-                puntuacion_oponente += 10;
-            }if (current_dices_especiales_oponente[i]==boo){  //Boo
-                puntuacion_oponente += 15;
-            }if (current_dices_especiales_oponente[i]==star){  //Estrella
-                puntuacion_oponente += 15;
-            }if (current_dices_especiales_oponente[i]==mega_mushroom){  //Megachampiñón
-                puntuacion_oponente += 15;
-            }
+        if (puntuacion_un_color<puntuacion_otro_color){
+            puntuacion_otro_color*10;
+        }else {
+            puntuacion_un_color*10;
         }*/
 
-        // Devuelvo la puntuación de mi jugador menos la puntuación del oponente.
-        return puntuacion_jugador - puntuacion_oponente;
-    //}
+        // Recorro las fichas de ese color.
+        for (int j = 0; j < num_pieces; j++)
+        {
+            // Valoro positivamente que la ficha esté en casilla segura o meta.
+            if (estado.isSafePiece(c, j))
+            {
+                puntuacion_jugador+=10;
+            }
+
+            if (estado.getBoard().getPiece(c, j).get_box().type == final_queue )
+            {//NUEVO
+                puntuacion_jugador+=30;
+            }
+
+            /*if (estado.isSafePiece(c, j) and estado.piecesAtGoal(c)==1)
+            {
+                puntuacion_jugador+=20;
+            }if (estado.isSafePiece(c, j) and estado.piecesAtGoal(c)==2)
+            {
+                puntuacion_jugador+=25;
+            }
+            else if (!estado.isSafePiece(c, j) and estado.piecesAtGoal(c)==2){
+                puntuacion_jugador-=10;
+            }*/
+
+
+
+            if (estado.getBoard().getPiece(c, j).get_box().type == goal)
+            {
+                puntuacion_jugador += 150;
+            }
+
+            
+            if (i==0){
+                distancia_un_color +=estado.distanceToGoal(c,estado.getBoard().getPiece(c, j).get_box());
+            }if (i==1){
+                distancia_otro_color +=estado.distanceToGoal(c,estado.getBoard().getPiece(c, j).get_box());
+            }
+
+            /*if (estado.isEatingMove() and (estado.eatenPiece().first!=my_colors[(i+1)%2])){  //si el q me como no es mi otro color
+                puntuacion_jugador += 30;
+            }else if (estado.isEatingMove()){   //si me como a mi mismo (hay veces que renta?)
+                puntuacion_jugador += 5;
+            }*/
+
+            /*if (estado.isEatingMove()){
+                puntuacion_jugador += 5;
+            }*/
+
+            //INTENTO POTENCIAR EL COLOR QUE TIENE MAS EN LA META-> Y ESTOOOOOOOO PPORQUEEEEEE NOOOOOOO MEJOOOOORAAAAAAAAAAAA
+            /*if (get<0>(estado.getLastAction())==c and estado.piecesAtGoal(c)==2){
+                puntuacion_jugador+=50;
+            }else  if (get<0>(estado.getLastAction())==c and estado.piecesAtGoal(c)==1){
+                puntuacion_jugador+=2;
+            }/*else if (get<0>(estado.getLastAction())!=c and estado.piecesAtGoal(c)==2){
+                puntuacion_jugador-=20;
+            }*/
+
+            if (estado.piecesAtGoal(c)==1){
+                puntuacion_jugador += 30;
+            }else if (estado.piecesAtGoal(c)==2){
+                puntuacion_jugador += 70;
+                casi_gano=true;
+            }else if (estado.piecesAtGoal(c)==3){//ESTO LO HE AÑADIDO NUUUEVOO PARA QUE QUIERA METER EN CASA
+                puntuacion_jugador += 6000;
+            }
+            if (estado.piecesAtHome(c)==1){
+                puntuacion_jugador -= 20;
+            }else if (estado.piecesAtHome(c)==2){
+                puntuacion_jugador -= 50;
+            }else if (estado.piecesAtHome(c)==3){
+                puntuacion_jugador -= 250;
+            }
+            
+            //if (casi_gano){ //quiero potenciar ese color
+
+            //}
+            //que haya una trampa en la siguiente casilla (realmente quiero en el final pero no se) 
+            /*if ((estado.anyTrap(estado.getBoard().getPiece(c, j).get_box(), estado.nextBox(c,(estado.getBoard().getPiece(c, j).get_box())))).size()>0){
+                puntuacion_jugador-=2; 
+            }*/
+
+            //OTRA IDEA: hacer barrera-> esto EMPEORA
+            /*if (estado.isWall(estado.getBoard().getPiece(c, j).get_box())==c){
+                puntuacion_jugador+=5; 
+            }*/
+
+            //le restamos la distancia pq quiero q se le de preferencia al que este mas cerca de la meta
+            puntuacion_jugador -=estado.distanceToGoal(c,estado.getBoard().getPiece(c, j).get_box());
+        }
+    }
+
+    //le quiero dar preferencia a ese color
+    if (distancia_un_color<distancia_otro_color){
+            puntuacion_jugador-=0.33*distancia_un_color;
+    }else {
+        puntuacion_jugador-=0.33*distancia_otro_color;
+    }
+
+    //OTRA IDEA: darle puntos a que se coma tb su propias fichas si ya tiene dos de un mismo color en goal
+    
+
+   
+    //Añado objetos especiales con puntuacion
+    for (int i = 0; i < current_dices_especiales.size(); i++)
+    {
+        if (current_dices_especiales[i]==banana){  //platano
+            puntuacion_jugador += 2;
+        }if (current_dices_especiales[i]==mushroom){  //champiñon
+            puntuacion_jugador += 7;
+        }if (current_dices_especiales[i]==red_shell){  //Caparazón rojo
+            puntuacion_jugador += 30;
+        }if (current_dices_especiales[i]==blue_shell){  //Caparazón azul
+            puntuacion_jugador += 50;
+        }if (current_dices_especiales[i]==horn){  //Bocina
+            puntuacion_jugador += 30;
+        }if (current_dices_especiales[i]==bullet){  //Bala
+            puntuacion_jugador += 35;
+        }if (current_dices_especiales[i]==shock){  //Rayo
+            puntuacion_jugador += 50;
+        }if (current_dices_especiales[i]==boo){  //Boo
+            puntuacion_jugador += 20;
+        }if (current_dices_especiales[i]==star){  //Estrella
+            puntuacion_jugador += 45;
+        }if (current_dices_especiales[i]==mega_mushroom){  //Megachampiñón
+            puntuacion_jugador += 40;
+        }
+    }
+
+
+    // Recorro todas las fichas del oponente
+    int puntuacion_oponente = 0;
+    // Recorro colores del oponente.
+    for (int i = 0; i < op_colors.size(); i++)
+    {
+        color c = op_colors[i];
+
+        // Recorro las fichas de ese color.
+        for (int j = 0; j < num_pieces; j++)
+        {
+            if (estado.isSafePiece(c, j))
+            {
+                // Valoro negativamente que la ficha esté en casilla segura o meta.
+                puntuacion_oponente+=10;
+            }
+            /*if (estado.isSafePiece(c, j) and estado.piecesAtGoal(c)==2)
+            {
+                puntuacion_oponente+=25;
+            }else if (!estado.isSafePiece(c, j) and estado.piecesAtGoal(c)==2){
+                puntuacion_oponente-=10;
+            }*/
+
+            if (estado.getBoard().getPiece(c, j).get_box().type == final_queue )
+            {
+                puntuacion_oponente+=30;
+            }
+
+
+            if (estado.getBoard().getPiece(c, j).get_box().type == goal)
+            {
+                puntuacion_oponente += 150;
+            }
+
+
+            /*if (estado.isEatingMove() and (estado.eatenPiece().first!=op_colors[(i+1)%2])){  //si el q me como no es mi otro color
+                puntuacion_oponente += 50;
+            }else if (estado.isEatingMove()){
+                puntuacion_oponente += 5;
+            }*/
+            /*if (estado.isEatingMove()){
+                puntuacion_oponente += 5;
+            }*/
+
+
+            if (estado.piecesAtGoal(c)==1){
+                puntuacion_oponente += 30;
+            }else if (estado.piecesAtGoal(c)==2){
+                puntuacion_oponente += 70;
+            }if (estado.piecesAtGoal(c)==3){
+                puntuacion_oponente += 6000;
+            }
+
+            if (estado.piecesAtHome(c)==1){
+                puntuacion_oponente -= 20;
+            }else if (estado.piecesAtHome(c)==2){
+                puntuacion_oponente -= 50;
+            }else if (estado.piecesAtHome(c)==3){
+                puntuacion_oponente -= 250;
+            }
+
+            /*if (estado.isWall(estado.getBoard().getPiece(c, j).get_box())==c){-> esto EMPEORA
+                puntuacion_oponente+=5; 
+            }*/
+            /*if (estado.isHornMove()){
+                puntuacion_oponente+=10;
+            }else if (estado.isShockMove()){
+                puntuacion_oponente+=10;
+            }else if (estado.isStarMove()){
+                puntuacion_oponente+=10;
+            }*/
+            //le restamos la distancia pq quiero q se le de preferencia al que este mas cerca de la meta
+            puntuacion_oponente -=estado.distanceToGoal(c,estado.getBoard().getPiece(c, j).get_box());
+        }
+    }
+
+    
+    for (int i = 0; i < current_dices_especiales_oponente.size(); i++)
+    {
+        if (current_dices_especiales_oponente[i]==banana){  //platano
+            puntuacion_oponente += 2;
+        }if (current_dices_especiales_oponente[i]==mushroom){  //champiñon
+            puntuacion_oponente += 7;
+        }if (current_dices_especiales_oponente[i]==red_shell){  //Caparazón rojo
+            puntuacion_oponente += 30;
+        }if (current_dices_especiales_oponente[i]==blue_shell){  //Caparazón azul
+            puntuacion_oponente += 50;
+        }if (current_dices_especiales_oponente[i]==horn){  //Bocina
+            puntuacion_oponente += 30;
+        }if (current_dices_especiales_oponente[i]==bullet){  //Bala
+            puntuacion_oponente += 35;
+        }if (current_dices_especiales_oponente[i]==shock){  //Rayo
+            puntuacion_oponente += 50;
+        }if (current_dices_especiales_oponente[i]==boo){  //Boo
+            puntuacion_oponente += 20;
+        }if (current_dices_especiales_oponente[i]==star){  //Estrella
+            puntuacion_oponente += 45;
+        }if (current_dices_especiales_oponente[i]==mega_mushroom){  //Megachampiñón
+            puntuacion_oponente += 40;
+        }
+    }
+
+    // Devuelvo la puntuación de mi jugador menos la puntuación del oponente.
+    return (puntuacion_jugador - puntuacion_oponente);
+
 }
 
